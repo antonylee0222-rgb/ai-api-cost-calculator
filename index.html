@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="免費 AI API 成本試算工具，估算每月 API 成本、每位用戶成本、毛利率、訂閱價格與打平付費用戶。"
+    />
+    <meta property="og:title" content="AI API 成本試算工具" />
+    <meta
+      property="og:description"
+      content="給 AI 創業者與小型團隊免費使用的 API 成本、毛利率與打平門檻試算器。"
+    />
+    <meta property="og:type" content="website" />
+    <title>AI API 成本試算工具</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="AI API 成本試算工具">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <span>AI API 成本試算工具</span>
+        </a>
+        <nav class="nav-links" aria-label="主要導覽">
+          <a href="#calculator">試算</a>
+          <a href="#models">模型比較</a>
+          <a href="#checklist">成本檢查</a>
+        </nav>
+        <button class="icon-button" id="resetButton" type="button" aria-label="重設預設值" title="重設預設值">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 4v6h6" />
+            <path d="M20 11a8 8 0 1 1-2.35-5.65L20 7.7" />
+          </svg>
+        </button>
+      </header>
+
+      <main id="top">
+        <section class="intro" aria-labelledby="pageTitle">
+          <div>
+            <h1 id="pageTitle">先算清楚，再決定要不要上線。</h1>
+            <p>用實際用量、token、價格、轉換率與固定成本，估算 AI SaaS 的 API 成本、毛利率與打平門檻。</p>
+          </div>
+          <div class="intro-meter" aria-label="目前風險摘要">
+            <span class="meter-label">目前方案</span>
+            <strong id="statusLabel">健康</strong>
+          <span id="statusNote">免費使用，資料只在本機試算</span>
+          </div>
+        </section>
+
+        <section class="calculator-grid" id="calculator">
+          <form class="panel input-panel" id="calculatorForm">
+            <div class="panel-heading">
+              <div>
+                <h2>核心假設</h2>
+                <p>調整每月用戶、使用頻率、token 與收入模型。</p>
+              </div>
+              <select id="presetSelect" aria-label="載入情境">
+                <option value="starter">早期 MVP</option>
+                <option value="growth">成長中 SaaS</option>
+                <option value="power">高用量工作流</option>
+              </select>
+            </div>
+
+            <div class="field-grid">
+              <label>
+                <span>月活躍用戶</span>
+                <input id="mau" type="number" min="1" step="1" value="1200" />
+              </label>
+              <label>
+                <span>付費轉換率</span>
+                <div class="input-suffix">
+                  <input id="conversionRate" type="number" min="0" max="100" step="0.1" value="6" />
+                  <span>%</span>
+                </div>
+              </label>
+              <label>
+                <span>每位用戶每月請求</span>
+                <input id="requestsPerUser" type="number" min="1" step="1" value="80" />
+              </label>
+              <label>
+                <span>訂閱月費</span>
+                <div class="input-prefix">
+                  <span>$</span>
+                  <input id="subscriptionPrice" type="number" min="0" step="0.5" value="19" />
+                </div>
+              </label>
+              <label>
+                <span>平均輸入 tokens</span>
+                <input id="inputTokens" type="number" min="0" step="50" value="900" />
+              </label>
+              <label>
+                <span>平均輸出 tokens</span>
+                <input id="outputTokens" type="number" min="0" step="50" value="550" />
+              </label>
+              <label>
+                <span>輸入價格 / 1M tokens</span>
+                <div class="input-prefix">
+                  <span>$</span>
+                  <input id="inputPrice" type="number" min="0" step="0.01" value="0.15" />
+                </div>
+              </label>
+              <label>
+                <span>輸出價格 / 1M tokens</span>
+                <div class="input-prefix">
+                  <span>$</span>
+                  <input id="outputPrice" type="number" min="0" step="0.01" value="0.6" />
+                </div>
+              </label>
+            </div>
+
+            <div class="panel-subsection">
+              <h3>容易被低估的成本</h3>
+              <div class="field-grid compact">
+                <label>
+                  <span>工具呼叫 / 重試倍率</span>
+                  <input id="overheadMultiplier" type="number" min="1" step="0.05" value="1.25" />
+                </label>
+                <label>
+                  <span>快取節省率</span>
+                  <div class="input-suffix">
+                    <input id="cacheSavings" type="number" min="0" max="95" step="1" value="12" />
+                    <span>%</span>
+                  </div>
+                </label>
+                <label>
+                  <span>安全緩衝</span>
+                  <div class="input-suffix">
+                    <input id="safetyBuffer" type="number" min="0" max="200" step="5" value="30" />
+                    <span>%</span>
+                  </div>
+                </label>
+                <label>
+                  <span>付款手續費</span>
+                  <div class="input-suffix">
+                    <input id="paymentFee" type="number" min="0" max="30" step="0.1" value="3.5" />
+                    <span>%</span>
+                  </div>
+                </label>
+                <label>
+                  <span>每月雲端 / 向量庫</span>
+                  <div class="input-prefix">
+                    <span>$</span>
+                    <input id="infraCost" type="number" min="0" step="10" value="180" />
+                  </div>
+                </label>
+                <label>
+                  <span>每月團隊 / 工具成本</span>
+                  <div class="input-prefix">
+                    <span>$</span>
+                    <input id="teamCost" type="number" min="0" step="50" value="900" />
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="slider-block">
+              <label for="targetMargin">目標毛利率 <strong id="targetMarginValue">70%</strong></label>
+              <input id="targetMargin" type="range" min="20" max="95" step="1" value="70" />
+            </div>
+          </form>
+
+          <aside class="panel result-panel" aria-live="polite">
+            <div class="panel-heading">
+              <div>
+                <h2>試算結果</h2>
+                <p>所有數字會隨輸入即時更新。</p>
+              </div>
+              <span class="scenario-chip" id="riskChip">低風險</span>
+            </div>
+
+            <div class="hero-result">
+              <span>每月 AI API 成本</span>
+              <strong id="monthlyApiCost">$0</strong>
+              <small id="tokenVolume">0M tokens / month</small>
+            </div>
+
+            <div class="metric-grid">
+              <div class="metric">
+                <span>每位活躍用戶成本</span>
+                <strong id="costPerActiveUser">$0</strong>
+              </div>
+              <div class="metric">
+                <span>每位付費用戶成本</span>
+                <strong id="costPerPaidUser">$0</strong>
+              </div>
+              <div class="metric">
+                <span>月收入</span>
+                <strong id="monthlyRevenue">$0</strong>
+              </div>
+              <div class="metric">
+                <span>毛利率</span>
+                <strong id="grossMargin">0%</strong>
+              </div>
+              <div class="metric">
+                <span>每月淨貢獻</span>
+                <strong id="netContribution">$0</strong>
+              </div>
+              <div class="metric">
+                <span>打平付費用戶</span>
+                <strong id="breakEvenUsers">0</strong>
+              </div>
+            </div>
+
+            <div class="recommendation" id="recommendationBox">
+              <h3 id="recommendationTitle">價格合理</h3>
+              <p id="recommendationText">目前假設下，訂閱價格可支撐 API 與營運成本。</p>
+            </div>
+
+            <div class="price-floor">
+              <span>達成目標毛利的建議最低月費</span>
+              <strong id="minimumPrice">$0</strong>
+            </div>
+          </aside>
+        </section>
+
+        <section class="analysis-grid" id="models">
+          <div class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>模型方案比較</h2>
+                <p>用同一組用量假設，比較便宜、均衡、高階模型。</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>方案</th>
+                    <th>輸入 / 輸出</th>
+                    <th>月 API 成本</th>
+                    <th>毛利率</th>
+                    <th>建議</th>
+                  </tr>
+                </thead>
+                <tbody id="modelRows"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>敏感度檢查</h2>
+                <p>看用量膨脹時，毛利會不會瞬間被吃掉。</p>
+              </div>
+            </div>
+            <div class="sensitivity-list" id="sensitivityList"></div>
+          </div>
+        </section>
+
+        <section class="panel checklist" id="checklist">
+          <div class="panel-heading">
+            <div>
+              <h2>還應該補進商業模型的資訊</h2>
+              <p>AI 成本不是只有 token 價格，這些欄位會決定你的產品是否真的能賺錢。</p>
+            </div>
+          </div>
+          <div class="checklist-grid">
+            <article>
+              <h3>免費額度與濫用控管</h3>
+              <p>設定免費用戶每月請求上限、每日尖峰限制、異常重試警報，避免免費流量吃掉毛利。</p>
+            </article>
+            <article>
+              <h3>輸出長度與工具呼叫</h3>
+              <p>模型回覆越長、agent 工具越多、重試越頻繁，成本會非線性上升。</p>
+            </article>
+            <article>
+              <h3>快取、批次與降級策略</h3>
+              <p>可快取的摘要、分類、模板化回答應該優先快取；非關鍵任務可改用便宜模型。</p>
+            </article>
+            <article>
+              <h3>客戶分層定價</h3>
+              <p>低價方案限制用量，高價方案提供高階模型、較長 context、優先佇列或團隊功能。</p>
+            </article>
+            <article>
+              <h3>毛利安全線</h3>
+              <p>早期至少保留 60% 以上毛利空間，因為之後還會加入客服、監控、資料庫與行銷成本。</p>
+            </article>
+            <article>
+              <h3>單位經濟檢查</h3>
+              <p>同時追蹤 CAC、LTV、退訂率與付費轉換率，避免只看 API 成本而忽略整體回本週期。</p>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
