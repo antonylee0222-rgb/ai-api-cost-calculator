@@ -46,7 +46,7 @@
           <div class="intro-meter" aria-label="目前風險摘要">
             <span class="meter-label">目前方案</span>
             <strong id="statusLabel">健康</strong>
-          <span id="statusNote">免費使用，資料只在本機試算</span>
+            <span id="statusNote">價格仍有安全空間</span>
           </div>
         </section>
 
@@ -67,46 +67,46 @@
             <div class="field-grid">
               <label>
                 <span>月活躍用戶</span>
-                <input id="mau" type="number" min="1" step="1" value="1200" />
+                <input id="mau" type="number" min="0" step="1" value="1200" inputmode="numeric" />
               </label>
               <label>
                 <span>付費轉換率</span>
                 <div class="input-suffix">
-                  <input id="conversionRate" type="number" min="0" max="100" step="0.1" value="6" />
+                  <input id="conversionRate" type="number" min="0" max="100" step="0.1" value="6" inputmode="decimal" />
                   <span>%</span>
                 </div>
               </label>
               <label>
                 <span>每位用戶每月請求</span>
-                <input id="requestsPerUser" type="number" min="1" step="1" value="80" />
+                <input id="requestsPerUser" type="number" min="0" step="1" value="80" inputmode="numeric" />
               </label>
               <label>
                 <span>訂閱月費</span>
                 <div class="input-prefix">
                   <span>$</span>
-                  <input id="subscriptionPrice" type="number" min="0" step="0.5" value="19" />
+                  <input id="subscriptionPrice" type="number" min="0" step="0.5" value="19" inputmode="decimal" />
                 </div>
               </label>
               <label>
                 <span>平均輸入 tokens</span>
-                <input id="inputTokens" type="number" min="0" step="50" value="900" />
+                <input id="inputTokens" type="number" min="0" step="50" value="900" inputmode="numeric" />
               </label>
               <label>
                 <span>平均輸出 tokens</span>
-                <input id="outputTokens" type="number" min="0" step="50" value="550" />
+                <input id="outputTokens" type="number" min="0" step="50" value="550" inputmode="numeric" />
               </label>
               <label>
                 <span>輸入價格 / 1M tokens</span>
                 <div class="input-prefix">
                   <span>$</span>
-                  <input id="inputPrice" type="number" min="0" step="0.01" value="0.15" />
+                  <input id="inputPrice" type="number" min="0" step="0.01" value="0.15" inputmode="decimal" />
                 </div>
               </label>
               <label>
                 <span>輸出價格 / 1M tokens</span>
                 <div class="input-prefix">
                   <span>$</span>
-                  <input id="outputPrice" type="number" min="0" step="0.01" value="0.6" />
+                  <input id="outputPrice" type="number" min="0" step="0.01" value="0.6" inputmode="decimal" />
                 </div>
               </label>
             </div>
@@ -116,26 +116,26 @@
               <div class="field-grid compact">
                 <label>
                   <span>工具呼叫 / 重試倍率</span>
-                  <input id="overheadMultiplier" type="number" min="1" step="0.05" value="1.25" />
+                  <input id="overheadMultiplier" type="number" min="1" step="0.05" value="1.25" inputmode="decimal" />
                 </label>
                 <label>
-                  <span>快取節省率</span>
+                  <span>整體 token 成本節省率</span>
                   <div class="input-suffix">
-                    <input id="cacheSavings" type="number" min="0" max="95" step="1" value="12" />
+                    <input id="cacheSavings" type="number" min="0" max="95" step="1" value="12" inputmode="decimal" />
                     <span>%</span>
                   </div>
                 </label>
                 <label>
                   <span>安全緩衝</span>
                   <div class="input-suffix">
-                    <input id="safetyBuffer" type="number" min="0" max="200" step="5" value="30" />
+                    <input id="safetyBuffer" type="number" min="0" max="200" step="5" value="30" inputmode="decimal" />
                     <span>%</span>
                   </div>
                 </label>
                 <label>
                   <span>付款手續費</span>
                   <div class="input-suffix">
-                    <input id="paymentFee" type="number" min="0" max="30" step="0.1" value="3.5" />
+                    <input id="paymentFee" type="number" min="0" max="30" step="0.1" value="3.5" inputmode="decimal" />
                     <span>%</span>
                   </div>
                 </label>
@@ -143,17 +143,18 @@
                   <span>每月雲端 / 向量庫</span>
                   <div class="input-prefix">
                     <span>$</span>
-                    <input id="infraCost" type="number" min="0" step="10" value="180" />
+                    <input id="infraCost" type="number" min="0" step="10" value="180" inputmode="decimal" />
                   </div>
                 </label>
                 <label>
                   <span>每月團隊 / 工具成本</span>
                   <div class="input-prefix">
                     <span>$</span>
-                    <input id="teamCost" type="number" min="0" step="50" value="900" />
+                    <input id="teamCost" type="number" min="0" step="50" value="900" inputmode="decimal" />
                   </div>
                 </label>
               </div>
+              <p class="assumption-note">節省率會同時套用到輸入與輸出 token，代表整體成本優化估算；實際上線前請依真實快取與輸出縮減數據校正。</p>
             </div>
 
             <div class="slider-block">
@@ -179,11 +180,11 @@
 
             <div class="metric-grid">
               <div class="metric">
-                <span>每位活躍用戶成本</span>
+                <span>每位活躍用戶 API 成本</span>
                 <strong id="costPerActiveUser">$0</strong>
               </div>
               <div class="metric">
-                <span>每位付費用戶成本</span>
+                <span>每位付費用戶攤提成本</span>
                 <strong id="costPerPaidUser">$0</strong>
               </div>
               <div class="metric">
@@ -191,7 +192,7 @@
                 <strong id="monthlyRevenue">$0</strong>
               </div>
               <div class="metric">
-                <span>毛利率</span>
+                <span>變動毛利率</span>
                 <strong id="grossMargin">0%</strong>
               </div>
               <div class="metric">
@@ -203,6 +204,7 @@
                 <strong id="breakEvenUsers">0</strong>
               </div>
             </div>
+            <p class="metric-note">變動毛利率僅扣除 AI API 與付款手續費；付費用戶攤提成本包含免費用戶 API 成本與付款手續費攤提。</p>
 
             <div class="recommendation" id="recommendationBox">
               <h3 id="recommendationTitle">價格合理</h3>
@@ -210,7 +212,7 @@
             </div>
 
             <div class="price-floor">
-              <span>達成目標毛利的建議最低月費</span>
+              <span>達成目標變動毛利的建議最低月費</span>
               <strong id="minimumPrice">$0</strong>
             </div>
           </aside>
@@ -221,7 +223,7 @@
             <div class="panel-heading">
               <div>
                 <h2>模型方案比較</h2>
-                <p>用同一組用量假設，比較便宜、均衡、高階模型。</p>
+                <p>用同一組用量假設，比較示範價格層級；不是官方即時模型報價。</p>
               </div>
             </div>
             <div class="table-wrap">
@@ -249,6 +251,11 @@
             </div>
             <div class="sensitivity-list" id="sensitivityList"></div>
           </div>
+        </section>
+
+        <section class="public-note" aria-label="公開使用說明">
+          <strong>免費使用，資料只在本機試算。</strong>
+          <span>本工具提供初步商業估算，實際上線前仍需依官方模型價格、真實 token 分布、免費用戶限制、付款費率、稅務與退款情境重新校正。</span>
         </section>
 
         <section class="panel checklist" id="checklist">

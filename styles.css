@@ -294,6 +294,14 @@ label {
   font-size: 15px;
 }
 
+.assumption-note,
+.metric-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .compact {
   gap: 12px;
 }
@@ -377,6 +385,11 @@ input[type="range"] {
   line-height: 1.1;
 }
 
+.metric-note {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
 .recommendation {
   margin-top: 14px;
   padding: 16px;
@@ -419,6 +432,28 @@ input[type="range"] {
 
 .analysis-grid {
   margin-top: 18px;
+}
+
+.public-note {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid #cfe0dc;
+  border-radius: var(--radius);
+  background: #eef8f5;
+  color: var(--teal-dark);
+  font-size: 13px;
+}
+
+.public-note strong {
+  flex: 0 0 auto;
+  font-size: 13px;
+}
+
+.public-note span {
+  color: #4f625e;
 }
 
 .table-wrap {
@@ -542,6 +577,10 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 
+  .checklist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .intro-meter {
     max-width: 420px;
   }
@@ -572,6 +611,11 @@ tbody tr:last-child td {
   .metric-grid,
   .checklist-grid {
     grid-template-columns: 1fr;
+  }
+
+  .public-note {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .input-panel,

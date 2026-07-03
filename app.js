@@ -78,11 +78,27 @@ const fields = [
 
 const $ = (id) => document.getElementById(id);
 
-function value(id) {
-  return Number($(id).value) || 0;
+function value(id, sync = false) {
+  const field = $(id);
+  const rawValue = field.value.trim();
+  let number = Number(field.value);
+  if (!Number.isFinite(number)) number = 0;
+
+  const min = field.min === "" ? -Infinity : Number(field.min);
+  const max = field.max === "" ? Infinity : Number(field.max);
+  const clamped = Math.min(max, Math.max(min, number));
+  if (sync && rawValue !== "" && number !== clamped) field.value = clamped;
+  return clamped;
+}
+
+function syncField(id) {
+  const field = $(id);
+  const nextValue = value(id);
+  if (Number(field.value) !== nextValue) field.value = nextValue;
 }
 
 function currency(number) {
+  if (!Number.isFinite(number)) return "無法計算";
   const abs = Math.abs(number);
   const digits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
   return new Intl.NumberFormat("en-US", {
@@ -93,41 +109,49 @@ function currency(number) {
 }
 
 function integer(number) {
+  if (!Number.isFinite(number)) return "無法打平";
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(number);
 }
 
 function percent(number) {
+  if (!Number.isFinite(number)) return "無收入";
   return `${number.toFixed(1)}%`;
 }
 
 function collectInputs() {
-  return Object.fromEntries(fields.map((field) => [field, value(field)]));
+  return Object.fromEntries(fields.map((field) => [field, value(field, true)]));
 }
 
 function calculate(inputs, overridePrices) {
   const inputPrice = overridePrices?.input ?? inputs.inputPrice;
   const outputPrice = overridePrices?.output ?? inputs.outputPrice;
+  const paymentFeeRate = inputs.paymentFee / 100;
+  const targetMarginDecimal = inputs.targetMargin / 100;
   const paidUsers = inputs.mau * (inputs.conversionRate / 100);
   const baseRequests = inputs.mau * inputs.requestsPerUser;
   const effectiveRequests = baseRequests * inputs.overheadMultiplier;
-  const cacheMultiplier = 1 - inputs.cacheSavings / 100;
+  const cacheMultiplier = Math.max(0, Math.min(1, 1 - inputs.cacheSavings / 100));
   const inputTokenTotal = effectiveRequests * inputs.inputTokens * cacheMultiplier;
   const outputTokenTotal = effectiveRequests * inputs.outputTokens * cacheMultiplier;
   const rawApiCost = (inputTokenTotal / 1_000_000) * inputPrice + (outputTokenTotal / 1_000_000) * outputPrice;
   const bufferedApiCost = rawApiCost * (1 + inputs.safetyBuffer / 100);
   const revenue = paidUsers * inputs.subscriptionPrice;
-  const paymentCost = revenue * (inputs.paymentFee / 100);
+  const paymentCost = revenue * paymentFeeRate;
   const variableCost = bufferedApiCost + paymentCost;
   const totalCost = variableCost + inputs.infraCost + inputs.teamCost;
   const grossProfit = revenue - variableCost;
   const netContribution = revenue - totalCost;
-  const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+  const grossMargin = revenue > 0 ? (grossProfit / revenue) * 100 : Infinity;
   const costPerActiveUser = inputs.mau > 0 ? bufferedApiCost / inputs.mau : 0;
-  const costPerPaidUser = paidUsers > 0 ? variableCost / paidUsers : 0;
-  const contributionPerPaidUser = inputs.subscriptionPrice * (1 - inputs.paymentFee / 100) - costPerPaidUser;
-  const breakEvenUsers = contributionPerPaidUser > 0 ? Math.ceil((inputs.infraCost + inputs.teamCost) / contributionPerPaidUser) : Infinity;
-  const targetMarginDecimal = inputs.targetMargin / 100;
-  const minimumPrice = costPerPaidUser / Math.max(0.01, 1 - targetMarginDecimal);
+  const apiCostPerPaidUser = paidUsers > 0 ? bufferedApiCost / paidUsers : Infinity;
+  const paymentCostPerPaidUser = inputs.subscriptionPrice * paymentFeeRate;
+  const costPerPaidUser = paidUsers > 0 ? apiCostPerPaidUser + paymentCostPerPaidUser : Infinity;
+  const netRevenuePerPaidUser = inputs.subscriptionPrice * (1 - paymentFeeRate);
+  const breakEvenCost = bufferedApiCost + inputs.infraCost + inputs.teamCost;
+  const breakEvenUsers = netRevenuePerPaidUser > 0 ? Math.ceil(breakEvenCost / netRevenuePerPaidUser) : Infinity;
+  const minimumPriceDenominator = 1 - targetMarginDecimal - paymentFeeRate;
+  const minimumPrice =
+    paidUsers > 0 && minimumPriceDenominator > 0 ? apiCostPerPaidUser / minimumPriceDenominator : Infinity;
 
   return {
     paidUsers,
@@ -142,9 +166,12 @@ function calculate(inputs, overridePrices) {
     grossMargin,
     netContribution,
     costPerActiveUser,
+    apiCostPerPaidUser,
     costPerPaidUser,
     breakEvenUsers,
     minimumPrice,
+    minimumPriceDenominator,
+    targetMarginReachable: minimumPriceDenominator > 0,
   };
 }
 
@@ -160,6 +187,34 @@ function updateRisk(result, inputs) {
   statusLabel.className = "";
   box.style.borderLeftColor = "var(--green)";
   box.style.background = "#f5fbf8";
+
+  if (result.revenue <= 0) {
+    chip.textContent = "高風險";
+    chip.style.background = "#fff0ed";
+    chip.style.color = "var(--coral)";
+    statusLabel.textContent = "無收入";
+    statusLabel.className = "danger";
+    statusNote.textContent = "有使用成本但沒有付費收入";
+    title.textContent = "目前沒有付費收入";
+    text.textContent = "付費轉換率為 0% 時仍可能產生 API 與固定成本；請先估算合理轉換率或限制免費用量。";
+    box.style.borderLeftColor = "var(--coral)";
+    box.style.background = "#fff7f5";
+    return;
+  }
+
+  if (!result.targetMarginReachable) {
+    chip.textContent = "高風險";
+    chip.style.background = "#fff0ed";
+    chip.style.color = "var(--coral)";
+    statusLabel.textContent = "無法達標";
+    statusLabel.className = "danger";
+    statusNote.textContent = "付款費率加目標毛利過高";
+    title.textContent = "目前設定無法達成目標毛利";
+    text.textContent = "目標毛利率加付款手續費已接近或超過 100%，需要降低目標、手續費，或調整商業模型。";
+    box.style.borderLeftColor = "var(--coral)";
+    box.style.background = "#fff7f5";
+    return;
+  }
 
   if (result.netContribution < 0 || result.grossMargin < 30) {
     chip.textContent = "高風險";
@@ -203,7 +258,9 @@ function renderModelRows(inputs) {
     .map((scenario) => {
       const result = calculate(inputs, scenario);
       const advice =
-        result.grossMargin >= inputs.targetMargin
+        !Number.isFinite(result.grossMargin)
+          ? "無收入"
+          : result.grossMargin >= inputs.targetMargin
           ? "可作為預設"
           : result.grossMargin >= 45
             ? "適合高價方案"
@@ -231,18 +288,22 @@ function renderSensitivity(inputs) {
     { label: "用量 +50%", multiplier: 1.5 },
     { label: "用量 x2", multiplier: 2 },
     { label: "輸出 x2", multiplier: 2, outputOnly: true },
+    { label: "壓力測試", multiplier: 2, stress: true },
   ];
 
   const rows = multipliers.map((item) => {
     const scenarioInputs = {
       ...inputs,
+      conversionRate: item.stress ? inputs.conversionRate * 0.5 : inputs.conversionRate,
       requestsPerUser: item.outputOnly ? inputs.requestsPerUser : inputs.requestsPerUser * item.multiplier,
-      outputTokens: item.outputOnly ? inputs.outputTokens * item.multiplier : inputs.outputTokens,
+      outputTokens: item.outputOnly || item.stress ? inputs.outputTokens * item.multiplier : inputs.outputTokens,
+      overheadMultiplier: item.stress ? inputs.overheadMultiplier * 1.5 : inputs.overheadMultiplier,
+      cacheSavings: item.stress ? 0 : inputs.cacheSavings,
     };
     const result = calculate(scenarioInputs);
-    const safeMargin = Math.max(-30, Math.min(90, result.grossMargin));
+    const safeMargin = Math.max(-30, Math.min(90, Number.isFinite(result.grossMargin) ? result.grossMargin : -30));
     const width = `${Math.max(4, ((safeMargin + 30) / 120) * 100)}%`;
-    const color = result.grossMargin < 30 ? "var(--coral)" : result.grossMargin < inputs.targetMargin ? "var(--amber)" : "var(--teal)";
+    const color = !Number.isFinite(result.grossMargin) || result.grossMargin < 30 ? "var(--coral)" : result.grossMargin < inputs.targetMargin ? "var(--amber)" : "var(--teal)";
 
     return `
       <div class="sensitivity-row">
@@ -268,8 +329,8 @@ function render() {
   $("monthlyRevenue").textContent = currency(result.revenue);
   $("grossMargin").textContent = percent(result.grossMargin);
   $("netContribution").textContent = currency(result.netContribution);
-  $("breakEvenUsers").textContent = Number.isFinite(result.breakEvenUsers) ? integer(result.breakEvenUsers) : "無法打平";
-  $("minimumPrice").textContent = currency(result.minimumPrice);
+  $("breakEvenUsers").textContent = integer(result.breakEvenUsers);
+  $("minimumPrice").textContent = result.targetMarginReachable ? currency(result.minimumPrice) : "無法達成";
 
   updateRisk(result, inputs);
   renderModelRows(inputs);
@@ -287,6 +348,10 @@ function applyPreset(name) {
 
 fields.forEach((field) => {
   $(field).addEventListener("input", render);
+  $(field).addEventListener("change", () => {
+    syncField(field);
+    render();
+  });
 });
 
 $("presetSelect").addEventListener("change", (event) => applyPreset(event.target.value));
